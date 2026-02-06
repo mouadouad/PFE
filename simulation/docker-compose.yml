@@ -1,0 +1,57 @@
+services:
+  ryu1:
+    image: osrg/ryu
+    container_name: ryu-controller-1
+    command: ryu-manager --observe-links /controller.py
+    ports:
+      - "6633:6633"  
+      - "8080:8080" 
+    networks:
+      sdn:
+        ipv4_address: 172.18.0.10
+    volumes:
+      - ./controller.py:/controller.py:ro
+    environment:
+      - PYTHONUNBUFFERED=1
+
+  ryu2:
+    image: osrg/ryu
+    container_name: ryu-controller-2
+    command: ryu-manager --observe-links /controller.py
+    ports:
+      - "6634:6633"  
+      - "8081:8080" 
+    networks:
+      sdn:
+        ipv4_address: 172.18.0.11
+    volumes:
+      - ./controller.py:/controller.py:ro
+    environment:
+      - PYTHONUNBUFFERED=1
+
+  mininet:
+    build: 
+        context: .
+        dockerfile: Dockerfile.mininet
+    container_name: mininet
+    privileged: true
+    stdin_open: true
+    tty: true
+    command: sleep infinity 
+    networks:
+       sdn: 
+          ipv4_address: 172.18.0.12
+    depends_on:
+      - ryu1
+      - ryu2
+    volumes:
+      - ./mininet:/home/mininet
+      - /lib/modules:/lib/modules:ro
+    working_dir: /home/mininet
+    
+networks:
+  sdn:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.18.0.0/16
